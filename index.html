@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pagewise – Free PDF tools</title>
+<meta name="description" content="Free PDF tools that run in your browser: merge, split, rotate and convert images to PDF. Files never leave your device.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Ctext y=%27.9em%27 font-size=%2790%27%3E%F0%9F%93%84%3C/text%3E%3C/svg%3E">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
+<style>
+:root{--bg:#f3f4f6;--surface:#fff;--ink:#1f2430;--muted:#5f6675;--accent:#e5322d;--accent-ink:#fff;--line:#dde0e6;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14161b;--surface:#1e222a;--ink:#eceef3;--muted:#a0a7b5;--accent:#ff5b55;--accent-ink:#14161b;--line:#303541;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#14161b;--surface:#1e222a;--ink:#eceef3;--muted:#a0a7b5;--accent:#ff5b55;--accent-ink:#14161b;--line:#303541;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.wrap{max-width:60rem;margin:0 auto;padding:0 1.25rem}
+header{background:var(--surface);border-bottom:1px solid var(--line)}
+header .wrap{display:flex;align-items:center;justify-content:space-between;height:3.5rem}
+.logo{font-weight:800;font-size:1.25rem;letter-spacing:-.02em;cursor:pointer;background:none;border:0;color:var(--ink);padding:0}
+.logo b{color:var(--accent)}
+.hero{text-align:center;padding:3rem 0 2rem}
+h1{font-size:clamp(2rem,6vw,3.2rem);line-height:1.1;letter-spacing:-.03em;margin:0 0 .75rem}
+.hero p{color:var(--muted);max-width:34rem;margin:0 auto;font-size:1.1rem}
+.grid{display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(13rem,1fr));padding-bottom:3rem}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:.6rem;padding:1.25rem;text-align:left;cursor:pointer;font:inherit;color:inherit}
+.card:hover{border-color:var(--accent)}
+.card .ic{display:grid;place-items:center;width:2.5rem;height:2.5rem;border-radius:.5rem;background:var(--accent);color:var(--accent-ink);font-size:1.2rem;margin-bottom:.75rem}
+.card h3{margin:0 0 .25rem;font-size:1.1rem}
+.card p{margin:0;color:var(--muted);font-size:.95rem}
+.tool{display:none;padding:2rem 0 3rem}
+.tool h2{margin:0 0 .25rem;font-size:1.8rem;letter-spacing:-.02em}
+.tool .sub{color:var(--muted);margin:0 0 1.5rem}
+.drop{display:block;border:2px dashed var(--line);border-radius:.6rem;background:var(--surface);padding:2.5rem 1rem;text-align:center;cursor:pointer}
+.drop:hover,.drop.over{border-color:var(--accent)}
+.drop input{position:absolute;opacity:0;width:1px;height:1px}
+.drop:focus-within{outline:3px solid var(--accent)}
+.btn{background:var(--accent);color:var(--accent-ink);border:0;border-radius:.45rem;padding:.8rem 1.5rem;font:inherit;font-weight:700;cursor:pointer}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.ghost{background:none;color:var(--ink);border:1px solid var(--line);padding:.35rem .6rem;font-weight:500}
+ul.files{list-style:none;margin:1rem 0;padding:0;display:grid;gap:.5rem}
+ul.files li{display:flex;align-items:center;gap:.5rem;background:var(--surface);border:1px solid var(--line);border-radius:.45rem;padding:.5rem .75rem}
+ul.files .n{flex:1;overflow-wrap:anywhere}
+ul.files .m{color:var(--muted);font-size:.85rem}
+.opts{margin:1rem 0;display:flex;gap:.75rem;align-items:center;flex-wrap:wrap}
+input[type=text],select{font:inherit;padding:.55rem .7rem;border:1px solid var(--line);border-radius:.4rem;background:var(--surface);color:var(--ink)}
+.status{margin-top:1rem;min-height:1.5rem;color:var(--muted)}
+.status.err{color:var(--accent)}
+footer{border-top:1px solid var(--line);color:var(--muted);padding:1.5rem 0 2rem;font-size:.9rem;text-align:center}
+ul.files li{flex-wrap:wrap}
+.th{width:3rem;height:4rem;flex:none;background:#fff;border:1px solid var(--line)}
+.th.empty{opacity:.4}
+#modal{position:fixed;inset:0;z-index:50;background:rgba(10,12,16,.78);display:flex;flex-direction:column;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+#modal[hidden]{display:none}
+.mh{display:flex;justify-content:space-between;align-items:center;gap:1rem;background:var(--surface);padding:.75rem 1.25rem;border-bottom:1px solid var(--line)}
+.mh strong{overflow-wrap:anywhere}
+#pages{overflow:auto;flex:1;padding:1rem;display:flex;flex-direction:column;align-items:center;gap:1rem}
+.pg{background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.3);max-width:100%}
+</style>
+</head>
+<body>
+<header><div class="wrap"><button class="logo" id="home" aria-label="Pagewise home">Page<b>wise</b></button></div></header>
+<main class="wrap">
+<section id="menu">
+  <div class="hero">
+    <h1>Every PDF tool you need, free.</h1>
+    <p>Merge, split, rotate and create PDFs. Your files stay in your browser and are never uploaded.</p>
+  </div>
+  <div class="grid" id="grid"></div>
+</section>
+<section class="tool" id="tool">
+  <button class="btn ghost" id="back">&larr; All tools</button>
+  <h2 id="tt" style="margin-top:1rem"></h2>
+  <p class="sub" id="ts"></p>
+  <label class="drop" id="drop"><input type="file" id="fi" multiple><strong id="dt">Choose files</strong><br><span class="m" style="color:var(--muted)">or drop them here</span></label>
+  <ul class="files" id="list"></ul>
+  <div class="opts" id="opts"></div>
+  <button class="btn" id="go" disabled></button>
+  <div class="status" id="st" role="status"></div>
+</section>
+</main>
+<footer>Pagewise runs entirely on your device.</footer>
+<div id="modal" hidden role="dialog" aria-modal="true" aria-labelledby="vt"><div class="mh"><strong id="vt"></strong><button class="btn ghost" id="mc">Close</button></div><div id="pages"></div></div>
+<script>
+const { PDFDocument, degrees } = PDFLib;
+const $ = id => document.getElementById(id);
+const TOOLS = {
+  merge:{icon:'+',name:'Merge PDF',desc:'Combine PDFs in any order. Preview and rotate each one, and make all pages the same orientation.',accept:'.pdf,application/pdf',multi:true,action:'Merge PDFs',out:'merged.pdf',opt:'<label>Page orientation <select id="orient"><option value="portrait">Make all portrait</option><option value="landscape">Make all landscape</option><option value="keep">Keep as is</option></select></label>'},
+  split:{icon:'/',name:'Split PDF',desc:'Pull out the pages you need into a new PDF.',accept:'.pdf,application/pdf',multi:false,action:'Extract pages',out:'extracted.pdf',opt:'<label>Pages <input type="text" id="range" placeholder="e.g. 1-3, 5, 8-10"></label>'},
+  rotate:{icon:'↻',name:'Rotate PDF',desc:'Turn every page of a PDF the way you want it.',accept:'.pdf,application/pdf',multi:false,action:'Rotate PDF',out:'rotated.pdf',opt:'<label>Rotate <select id="angle"><option value="90">90° clockwise</option><option value="180">180°</option><option value="270">90° counter-clockwise</option></select></label>'},
+  img:{icon:'▣',name:'Images to PDF',desc:'Turn JPG and PNG images into one PDF.',accept:'image/jpeg,image/png,.jpg,.jpeg,.png',multi:true,action:'Create PDF',out:'images.pdf'}
+};
+let cur=null, files=[];
+$('grid').innerHTML=Object.entries(TOOLS).map(([k,t])=>`<button class="card" data-k="${k}"><div class="ic" aria-hidden="true">${t.icon}</div><h3>${t.name}</h3><p>${t.desc}</p></button>`).join('');
+$('grid').onclick=e=>{const c=e.target.closest('.card');if(c)open(c.dataset.k)};
+$('home').onclick=$('back').onclick=()=>{$('tool').style.display='none';$('menu').style.display='block'};
+function open(k){
+  cur=TOOLS[k];cur.key=k;files=[];
+  $('menu').style.display='none';$('tool').style.display='block';
+  $('tt').textContent=cur.name;$('ts').textContent=cur.desc;
+  $('fi').value='';$('fi').accept=cur.accept;$('fi').multiple=cur.multi;
+  $('dt').textContent=cur.multi?'Choose files':'Choose a file';
+  $('opts').innerHTML=cur.opt||'';$('go').textContent=cur.action;
+  if($('orient'))$('orient').onchange=render;
+  status('');render();
+}
+function status(m,err){$('st').textContent=m;$('st').className='status'+(err?' err':'')}
+function addFiles(list){
+  const arr=[...list];
+  files=cur.multi?files.concat(arr):arr.slice(0,1);
+  files.forEach(loadMeta);
+  status('');render();
+}
+$('fi').onchange=e=>{addFiles(e.target.files);e.target.value=''};
+const dz=$('drop');
+['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('over')}));
+['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('over')}));
+dz.addEventListener('drop',e=>addFiles(e.dataTransfer.files));
+function render(){
+  const l=$('list');l.innerHTML='';
+  files.forEach((f,i)=>{
+    const li=document.createElement('li');
+    decorate(li,f);
+    if(cur.multi&&files.length>1){
+      [['↑',-1],['↓',1]].forEach(([s,d])=>{const b=document.createElement('button');b.className='btn ghost';b.textContent=s;b.setAttribute('aria-label',d<0?'Move up':'Move down');
+        b.onclick=()=>{const j=i+d;if(j<0||j>=files.length)return;[files[i],files[j]]=[files[j],files[i]];render()};li.append(b)});
+    }
+    const x=document.createElement('button');x.className='btn ghost';x.textContent='✕';x.setAttribute('aria-label','Remove '+f.name);
+    x.onclick=()=>{files.splice(i,1);render()};li.append(x);
+    l.append(li);
+  });
+  $('go').disabled=!files.length||(cur.key==='merge'&&files.length<2);
+}
+function parseRange(s,total){
+  const out=[];
+  for(const part of s.split(',').map(p=>p.trim()).filter(Boolean)){
+    const m=part.match(/^(\d+)(?:\s*-\s*(\d+))?$/);
+    if(!m)throw new Error('Could not read "'+part+'". Use a format like 1-3, 5.');
+    const a=+m[1],b=m[2]?+m[2]:a;
+    if(a<1||b<a||b>total)throw new Error('Pages must be between 1 and '+total+'.');
+    for(let p=a;p<=b;p++)out.push(p-1);
+  }
+  if(!out.length)throw new Error('Enter the pages to extract.');
+  return out;
+}
+const buf=f=>f.arrayBuffer();
+async function run(){
+  const k=cur.key;
+  if(k==='merge'){
+    const out=await PDFDocument.create();
+    const t=target();
+    for(const f of files){
+      const rot=(meta.get(f)||{}).rot||0;
+      const d=await PDFDocument.load(await buf(f));
+      (await out.copyPages(d,d.getPageIndices())).forEach(p=>{
+        let a=(p.getRotation().angle+rot)%360;
+        const {width:w,height:h}=p.getSize();
+        const land=a%180===0?w>h:h>w;
+        if(t==='portrait'&&land)a+=90;
+        if(t==='landscape'&&!land&&w!==h)a+=90;
+        p.setRotation(degrees(a%360));out.addPage(p);
+      });
+    }
+    return out.save();
+  }
+  if(k==='split'){
+    const d=await PDFDocument.load(await buf(files[0]));
+    const idx=parseRange($('range').value,d.getPageCount());
+    const out=await PDFDocument.create();
+    (await out.copyPages(d,idx)).forEach(p=>out.addPage(p));
+    return out.save();
+  }
+  if(k==='rotate'){
+    const d=await PDFDocument.load(await buf(files[0]));const a=+$('angle').value;
+    d.getPages().forEach(p=>p.setRotation(degrees((p.getRotation().angle+a)%360)));
+    return d.save();
+  }
+  if(k==='img'){
+    const out=await PDFDocument.create();
+    for(const f of files){
+      const b=await buf(f);
+      const img=(f.type==='image/png'||/\.png$/i.test(f.name))?await out.embedPng(b):await out.embedJpg(b);
+      out.addPage([img.width,img.height]).drawImage(img,{x:0,y:0,width:img.width,height:img.height});
+    }
+    return out.save();
+  }
+}
+if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const meta=new Map();
+async function loadMeta(f){
+  if(meta.has(f)||cur.key==='img')return;
+  const m={rot:0,pages:[]};meta.set(f,m);
+  try{
+    if(!window.pdfjsLib)throw 0;
+    m.doc=await pdfjsLib.getDocument({data:new Uint8Array(await f.arrayBuffer())}).promise;
+    for(let i=1;i<=m.doc.numPages;i++){const v=(await m.doc.getPage(i)).getViewport({scale:1});m.pages.push({w:v.width,h:v.height})}
+  }catch(e){m.doc=null}
+  m.done=true;render();
+}
+function btn(t,a){const b=document.createElement('button');b.className='btn ghost';b.textContent=t;b.setAttribute('aria-label',a);return b}
+function target(){return cur.key==='merge'&&$('orient')?$('orient').value:'keep'}
+function extra(m,i){
+  const pg=m.pages[i];if(!pg)return m.rot;
+  const sw=m.rot%180!==0,w=sw?pg.h:pg.w,h=sw?pg.w:pg.h,t=target();
+  let fix=0;if(t==='portrait'&&w>h)fix=90;if(t==='landscape'&&h>w)fix=90;
+  return (m.rot+fix)%360;
+}
+function describe(m,f){
+  const kb=(f.size/1024).toFixed(0)+' KB';
+  if(!m.pages.length)return m.done?kb:'Reading…';
+  let p=0,l=0;
+  m.pages.forEach((pg,i)=>{const sw=extra(m,i)%180!==0;const land=sw?pg.h>pg.w:pg.w>pg.h;land?l++:p++});
+  const parts=[m.pages.length+(m.pages.length===1?' page':' pages')];
+  if(p)parts.push(p+' portrait');if(l)parts.push(l+' landscape');
+  return parts.join(' · ');
+}
+function decorate(li,f){
+  const m=meta.get(f)||{pages:[],rot:0};
+  const pdf=cur.key!=='img';
+  if(pdf){const th=document.createElement('canvas');th.className='th';li.append(th);if(m.doc)drawPage(m,0,th,96,false);else th.classList.add('empty')}
+  const n=document.createElement('span');n.className='n';
+  const nm=document.createElement('strong');nm.textContent=f.name;
+  const sm=document.createElement('div');sm.className='m';
+  sm.textContent=pdf?describe(m,f):(f.size/1024).toFixed(0)+' KB';
+  n.append(nm,sm);li.append(n);
+  if(pdf&&m.doc){
+    if(cur.key==='merge')[['⟲',-90,'Rotate left'],['⟳',90,'Rotate right']].forEach(([s,d,a])=>{const b=btn(s,a+' '+f.name);b.onclick=()=>{m.rot=(m.rot+d+360)%360;render()};li.append(b)});
+    const v=btn('View','View '+f.name);v.onclick=()=>openView(f);li.append(v);
+  }
+}
+async function drawPage(m,i,c,size,byW){
+  try{
+    const p=await m.doc.getPage(i+1),r=(p.rotate+extra(m,i))%360,v0=p.getViewport({scale:1,rotation:r});
+    const s=size/(byW?v0.width:Math.max(v0.width,v0.height)),d=window.devicePixelRatio||1,v=p.getViewport({scale:s*d,rotation:r});
+    c.width=v.width;c.height=v.height;c.style.width=v0.width*s+'px';c.style.height=v0.height*s+'px';
+    await p.render({canvasContext:c.getContext('2d'),viewport:v}).promise;
+  }catch(e){}
+}
+let viewTok=0;
+async function openView(f){
+  const m=meta.get(f),box=$('pages'),tok=++viewTok;box.innerHTML='';
+  $('vt').textContent=f.name;$('modal').hidden=false;$('mc').focus();
+  const w=Math.min(innerWidth-64,640);
+  for(let i=0;i<m.pages.length&&tok===viewTok&&!$('modal').hidden;i++){
+    const c=document.createElement('canvas');c.className='pg';c.setAttribute('aria-label','Page '+(i+1));box.append(c);
+    await drawPage(m,i,c,w,true);
+  }
+}
+$('mc').onclick=()=>{$('modal').hidden=true};
+addEventListener('keydown',e=>{if(e.key==='Escape')$('modal').hidden=true});
+$('go').onclick=async()=>{
+  $('go').disabled=true;status('Working…');
+  try{
+    const bytes=await run();
+    
+    let dl=null;try{if(window.claude&&claude.use)dl=await claude.use('downloads')}catch(e){}
+    if(dl){await dl.save({filename:cur.out,data:bytes})}
+    else{
+      const url=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'}));
+      const a=document.createElement('a');a.href=url;a.download=cur.out;document.body.append(a);a.click();a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),10000);
+    }
+    status('Finished. Your file is ready.');
+  }catch(e){
+    status(e&&e.code==='declined'?'Save cancelled.':(e&&e.message)||'Something went wrong. Check the file and try again.',true);
+  }finally{render()}
+};
+</script>
+</body>
+</html>
